@@ -8,7 +8,7 @@ _|  _|  _|  _|    _|  _|  _|  _|  _|    _|  ||===   . ||
 _|  _|  _|  _|    _|  _|      _|  _|    _|  || +  o  0||
 _|_|_|_|_|    _|_|_|  _|      _|    _|_|    ||________||
                                                |    |
-WUMO The Weather Robot - Dreamed up by Dan Fein  
+WUMO The Weather Robot - Dreamed up by Dan Fein and Amy Fischlin
 GLCD is a ks0108 on an Arduino: playground.arduino.cc/Code/GLCDks0108 may help with wiring
 GLCD.h library from Michael Margolis and Bill Perry: code.google.com/p/glcd-arduino/
 */
