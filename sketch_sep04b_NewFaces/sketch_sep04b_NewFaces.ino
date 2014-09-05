@@ -15,15 +15,51 @@ GLCD.h library from Michael Margolis and Bill Perry: code.google.com/p/glcd-ardu
 
 // WxBot Project v.02 - Animated Face and Temperature History Monitor
 
-#include <glcd.h> // include the graphics LCD library
+#include <glcd.h>                // include the graphics LCD library
 #include <fonts/SystemFont5x7.h> // include the standard character fonts for it
+
+#include <Wire.h>                // Barometer is an i2c device, this is needed to chat with it
+#include <Adafruit_Sensor.h>     // sensor foundation library
+#include <Adafruit_BMP085_U.h>   // library for barometer
+
+/* This driver uses the Adafruit unified sensor library (Adafruit_Sensor),
+   which provides a common 'type' for sensor data and some helper functions.
+   
+   To use this driver you will also need to download the Adafruit_Sensor
+   library and include it in your libraries folder.
+
+   You should also assign a unique ID to this sensor for use with
+   the Adafruit Sensor API so that you can identify this particular
+   sensor in any data logs, etc.  To assign a unique ID, simply
+   provide an appropriate value in the constructor below (12345
+   is used by default in this example).
+   
+   Connections
+   ===========
+   Connect SCL to analog 5
+   Connect SDA to analog 4
+   Connect VDD to 3.3V DC
+   Connect GROUND to common ground
+    
+   History
+   =======
+   2013/JUN/17  - Updated altitude calculations (KTOWN)
+   2013/FEB/13  - First version (KTOWN)
+*/   
+Adafruit_BMP085_Unified bmp = Adafruit_BMP085_Unified(10085);
+
+#include <DHT.h>          // Library for humidity sensor
+#include <DHT_U.h>        // and it's pal
+#define  DHTTYPE DHT22    // tell the library what I am workin with - DHT 22 (AM2302)
+
+
 int tcurrent;
-int tempArray[100];
+int tempArray[100];         //For the temp graph data
 
 void setup()
 {
-  GLCD.Init(NON_INVERTED); // configure GLCD
-  GLCD.ClearScreen(); // turn off all GLCD pixels
+  GLCD.Init(NON_INVERTED);  // configure GLCD
+  GLCD.ClearScreen();       // turn off all GLCD pixels
   GLCD.SelectFont(System5x7);
 }
 
@@ -46,7 +82,20 @@ void getTemp() // function to read temperature from TMP36
   }
   tempArray[0] = tcurrent;
 }
-void drawScreen() // generate GLCD display effects
+
+void getPressure()           //Read from BMP180 barometer
+{
+  
+  
+}
+
+void getHumid()              //Read from DHT22 humidity sensor
+{
+  
+  
+}
+
+void drawScreen()            // generate GLCD display effects
 {
   int q;
   GLCD.ClearScreen();
@@ -73,7 +122,7 @@ void drawScreen() // generate GLCD display effects
   }
 }
 
-void face() //Face animation
+void face()                        //Face animation
 {
   
   GLCD.ClearScreen();
@@ -396,15 +445,14 @@ delay(4000);
 
 void loop()
 {
-  getTemp();
-  face();
-  drawScreen();
+  getTemp();                     // Get temperature into memory
+  face();                        // whistling face
+  drawScreen();                  // display temp graph
   for (int a = 0 ; a < 20 ; a++) // wait 20x delay until the next reading
   {
   delay(100); // wait 
   }
-  sweat();
-  
+  sweat();                       // sweaty hot face
 }
 
 
