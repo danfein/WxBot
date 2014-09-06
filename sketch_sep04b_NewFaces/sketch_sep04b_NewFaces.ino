@@ -13,7 +13,7 @@ GLCD is a ks0108 on an Arduino: playground.arduino.cc/Code/GLCDks0108 may help w
 GLCD.h library from Michael Margolis and Bill Perry: code.google.com/p/glcd-arduino/
 */
 
-// WxBot Project v.02 - Animated Face and Temperature History Monitor
+// WxBot Project v.04 - Animated Face and Temperature History Monitor (now with extra humidity and super barometer powers)
 
 #include <glcd.h>                // include the graphics LCD library
 #include <fonts/SystemFont5x7.h> // include the standard character fonts for it
