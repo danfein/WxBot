@@ -48,33 +48,81 @@ GLCD.h library from Michael Margolis and Bill Perry: code.google.com/p/glcd-ardu
 */   
 Adafruit_BMP085_Unified bmp = Adafruit_BMP085_Unified(10085);
 
+
 #include <DHT.h>          // Library for humidity sensor
 #include <DHT_U.h>        // and it's pal
 #define  DHTTYPE DHT22    // tell the library what I am workin with - DHT 22 (AM2302)
+#define DHTPIN 3          // Humidity sensor is on pin 2
 
+DHT_Unified dht(DHTPIN, DHTTYPE);
+uint32_t delayMS;
 
 int tcurrent;
 int tempArray[100];         //For the temp graph data
+
+float hcurrent;
+float humidArray[100];      //for humidity graph
+
+float pcurrent;
+float pressArray[100];      //For barometric pressure graph
 
 void setup()
 {
   GLCD.Init(NON_INVERTED);  // configure GLCD
   GLCD.ClearScreen();       // turn off all GLCD pixels
   GLCD.SelectFont(System5x7);
+  
+  Serial.begin(9600); 
+  // Initialize device.
+  
+  //DHT22 setup
+  dht.begin();
+  Serial.println("DHTxx Unified Sensor Example");
+  // Print temperature sensor details.
+  sensor_t sensor;
+  dht.temperature().getSensor(&sensor);
+  Serial.println("------------------------------------");
+  Serial.println("Temperature");
+  Serial.print  ("Sensor:       "); Serial.println(sensor.name);
+  Serial.print  ("Driver Ver:   "); Serial.println(sensor.version);
+  Serial.print  ("Unique ID:    "); Serial.println(sensor.sensor_id);
+  Serial.print  ("Max Value:    "); Serial.print(sensor.max_value); Serial.println(" *C");
+  Serial.print  ("Min Value:    "); Serial.print(sensor.min_value); Serial.println(" *C");
+  Serial.print  ("Resolution:   "); Serial.print(sensor.resolution); Serial.println(" *C");  
+  Serial.println("------------------------------------");
+  // Print humidity sensor details.
+  dht.humidity().getSensor(&sensor);
+  Serial.println("------------------------------------");
+  Serial.println("Humidity");
+  Serial.print  ("Sensor:       "); Serial.println(sensor.name);
+  Serial.print  ("Driver Ver:   "); Serial.println(sensor.version);
+  Serial.print  ("Unique ID:    "); Serial.println(sensor.sensor_id);
+  Serial.print  ("Max Value:    "); Serial.print(sensor.max_value); Serial.println("%");
+  Serial.print  ("Min Value:    "); Serial.print(sensor.min_value); Serial.println("%");
+  Serial.print  ("Resolution:   "); Serial.print(sensor.resolution); Serial.println("%");  
+  Serial.println("------------------------------------");
+  // Set delay between sensor readings based on sensor details.
+  delayMS = sensor.min_delay / 1000;
+  
+  
+  //BMP180 setup
+  Serial.println("Pressure Sensor Test"); Serial.println("");
+  
+  /* Initialise the sensor */
+  if(!bmp.begin())
+  {
+    /* There was a problem detecting the BMP085 ... check your connections */
+    Serial.print("Ooops, no BMP085 detected ... Check your wiring or I2C ADDR!");
+    while(1);
+  }
+  
 }
 
-void getTemp() // function to read temperature from TMP36
+void getTemp()           //Read from DHT22
 {
-  float sum = 0;
-  float voltage = 0;
-  float sensor = 0;
-  float celsius;
-  // read the temperature sensor and convert the result to degrees C
-  sensor = analogRead(5);
-  voltage = (sensor * 5000) / 1024;
-  voltage = voltage - 500;
-  celsius = voltage / 10;
-  tcurrent = int(celsius);
+  sensors_event_t event;  
+  dht.temperature().getEvent(&event);
+  tcurrent = event.temperature;
   // insert the new temperature at the start of the array of past temperatures
   for (int a = 99 ; a >= 0 ; --a )
   {
@@ -83,19 +131,43 @@ void getTemp() // function to read temperature from TMP36
   tempArray[0] = tcurrent;
 }
 
-void getPressure()           //Read from BMP180 barometer
+
+void getHumid()           //Read from DHT22 
 {
-  
+
+  sensors_event_t event;  
+  dht.humidity().getEvent(&event);
+  hcurrent = event.relative_humidity;
+  // insert the new temperature at the start of the array of past values
+  for (int a = 99 ; a >= 0 ; --a )
+  {
+    humidArray[a] = humidArray[a-1];
+  }
+  humidArray[0] = hcurrent;
   
 }
 
-void getHumid()              //Read from DHT22 humidity sensor
+
+void getPressure()              //Read from BMP180 humidity sensor
 {
+  /* Get a new sensor event */ 
+  sensors_event_t event;
+  bmp.getEvent(&event);
+  pcurrent = event.pressure;
   
+  Serial.print(event.pressure); //for testing
   
+  GLCD.ClearScreen();
+  GLCD.CursorTo(1,2);
+  GLCD.print("Barometric Pressure");
+  GLCD.CursorTo(4,3);
+  GLCD.print(pcurrent);
+  GLCD.print(" hPa");
+  
+  delay(2000);
 }
 
-void drawScreen()            // generate GLCD display effects
+void drawTemp()                 // generate Temp graph
 {
   int q;
   GLCD.ClearScreen();
@@ -120,6 +192,35 @@ void drawScreen()            // generate GLCD display effects
     q = (55 - tempArray[a-28]);
     GLCD.SetDot(a, q, BLACK);
   }
+  delay(2000);
+}
+
+void drawHumid()                // generate Humidity graph
+{
+  int q;
+  GLCD.ClearScreen();
+  GLCD.CursorTo(0, 0);
+  GLCD.Puts("Current:");
+  GLCD.PrintNumber(hcurrent);
+  GLCD.Puts(" % Humidity");
+  GLCD.CursorTo(0, 1);
+  GLCD.PrintNumber(80);
+  GLCD.CursorTo(0, 2);
+  GLCD.PrintNumber(60);
+  GLCD.CursorTo(0, 3);
+  GLCD.PrintNumber(40);
+  GLCD.CursorTo(0, 4);
+  GLCD.PrintNumber(20);
+  GLCD.CursorTo(0, 5);
+  GLCD.PrintNumber(10);
+  GLCD.CursorTo(0, 6);
+  GLCD.PrintNumber(0);
+  for (int a = 28 ; a < 127 ; a++)
+  {
+    q = (55 - (humidArray[a-28]/2) );
+    GLCD.SetDot(a, q, BLACK);
+  }
+  delay(2000);
 }
 
 void face()                        //Face animation
@@ -132,7 +233,7 @@ void face()                        //Face animation
   GLCD.FillRect(52,43,3,1,BLACK); // mouth right
   GLCD.FillRect(72,43,3,1,BLACK); // mouth left
 
-delay(5000);
+delay(2000);
 
   GLCD.ClearScreen();
   GLCD.FillRect(19,17,8,10,BLACK); //left eye
@@ -294,16 +395,16 @@ delay(500);
 
   GLCD.ClearScreen();
   GLCD.FillRect(19,17,8,10,BLACK); //left eye
-    GLCD.DrawRect(15,17,30,1, BLACK); //top line
+  GLCD.DrawRect(15,17,30,1, BLACK); //top line
   GLCD.FillRect(95,17,8,10,BLACK); //right eye
-    GLCD.DrawRect(90,17,30,1, BLACK); //top line
+  GLCD.DrawRect(90,17,30,1, BLACK); //top line
   GLCD.DrawCircle(55,45,2,BLACK); // whistle 1
 
   delay(100);
 
   GLCD.ClearScreen();
-    GLCD.DrawRect(15,20,30,1, BLACK); //top line
-    GLCD.DrawRect(90,20,30,1, BLACK); //top line
+  GLCD.DrawRect(15,20,30,1, BLACK); //top line
+  GLCD.DrawRect(90,20,30,1, BLACK); //top line
   GLCD.DrawCircle(55,45,2,BLACK); // whistle 1
 
   delay(100);
@@ -317,7 +418,7 @@ delay(500);
 
 }
 
-void sweat()
+void sweat()                      //Humidity Face
 {
  
  GLCD.ClearScreen();
@@ -429,9 +530,9 @@ delay(1000);
   GLCD.FillRect(70,47,1,2,BLACK); // tongue left
   GLCD.FillRect(68,50,1,1,BLACK); // tongue left 2
   
-delay(3000);
+delay(1500);
 
-
+/*
 GLCD.ClearScreen();
 GLCD.CursorTo(6, 3); 
 GLCD.print("It is hot");
@@ -439,20 +540,47 @@ GLCD.CursorTo(7, 4);
 GLCD.print("as cuss.");
 
 delay(4000);
-
+*/
 }
 
+void shifty()
+{
+  for (int a = 0 ; a < 2 ; a++) // eyes back and for this many times
+  {
+    GLCD.ClearScreen();
+    GLCD.FillRect(19,25,8,8,BLACK); //left eye
+    GLCD.DrawRect(15,25,30,1, BLACK); //top line
+    GLCD.DrawRect(15,34,30,1, BLACK); //bottom line
+    GLCD.FillRect(95,25,8,8,BLACK); //right eye
+    GLCD.DrawRect(90,25,30,1, BLACK); //top line
+    GLCD.DrawRect(90,34,30,1, BLACK); //bottom line
+    GLCD.FillRect(55,50,20,1,BLACK); // mouth
+  
+  delay(1500);
+  
+    GLCD.ClearScreen();
+    GLCD.FillRect(32,25,8,8,BLACK); //left eye
+    GLCD.DrawRect(15,25,30,1, BLACK); //top line
+    GLCD.DrawRect(15,34,30,1, BLACK); //bottom line
+    GLCD.FillRect(109,25,8,8,BLACK); //right eye
+    GLCD.DrawRect(90,25,30,1, BLACK); //top line
+    GLCD.DrawRect(90,34,30,1, BLACK); //bottom line
+    GLCD.FillRect(55,50,20,1,BLACK); // mouth
+  
+  delay(1500);
+  }
+}
 
 void loop()
 {
   getTemp();                     // Get temperature into memory
   face();                        // whistling face
-  drawScreen();                  // display temp graph
-  for (int a = 0 ; a < 20 ; a++) // wait 20x delay until the next reading
-  {
-  delay(100); // wait 
-  }
+  drawTemp();                    // display temp graph
   sweat();                       // sweaty hot face
+  getHumid();                    // put humidity into array
+  drawHumid();                   // display humidity graph
+  shifty();                      // shifty face
+  getPressure();                 // Display pressure
 }
 
 
